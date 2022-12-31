@@ -5,6 +5,10 @@ const sketch = (p: p5) => {
 
     let imgScale = 0.4;
 
+    let gameState = 'pregame';
+
+    let load = 0;
+
     p.preload = () => {
         shipImg = p.loadImage('assets/lean ship.png');
         cannonImg = p.loadImage('assets/lean cannon.png');
@@ -23,7 +27,7 @@ const sketch = (p: p5) => {
 
     let speed = 10;
     let res = 10;
-    let maxHeightMult = 0.8;
+    let maxHeightMult = 0.01;
     let minHeightMult = 0;
 
     let wheelRadius = 10;
@@ -33,7 +37,7 @@ const sketch = (p: p5) => {
     let angle = 0;
 
     let shot = false;
-
+    let X = -wheelBase * 4;
     class Lean {
         x: number;
         y: number;
@@ -137,7 +141,7 @@ const sketch = (p: p5) => {
 
         // wheel 1 (driving wheel)
 
-        const x = p.width * 0.2 - wheelBase / 2;
+        const x = X;
         const y = getY(x / res) - wheelRadius;
 
         // p.fill(84, 22, 117);
@@ -204,12 +208,10 @@ const sketch = (p: p5) => {
                 );
 
                 p.pop();
-                // circle at fire point
-                p.fill('red');
 
                 // shoot
 
-                if (p.mouseIsPressed && !shot) {
+                if (p.mouseIsPressed && !shot && gameState === 'play') {
                     leans.push(
                         new Lean(
                             x4 + 55 * imgScale * p.cos(angle) * 2,
@@ -234,6 +236,31 @@ const sketch = (p: p5) => {
 
         if (!p.mouseIsPressed) {
             shot = false;
+        }
+
+        if (gameState === 'pregame') {
+            p.textAlign(p.CENTER, p.CENTER);
+            p.textSize(50);
+            p.fill('purple');
+            p.text('LEAN PIRATES', p.width / 2, p.height / 2);
+
+            p.textSize(20);
+            p.text('click to start', p.width / 2, p.height / 2 + 50);
+
+            if (p.mouseIsPressed) {
+                gameState = 'loading';
+            }
+        }
+
+        if (gameState === 'loading') {
+            load += 1;
+
+            maxHeightMult = p.map(load, 0, 150, 0, 0.8);
+            X = p.map(load, 0, 150, -wheelBase * 2, p.width * 0.2 - wheelBase / 2);
+
+            if (load > 150) {
+                gameState = 'play';
+            }
         }
     };
 };

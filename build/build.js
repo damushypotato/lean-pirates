@@ -3,6 +3,8 @@ const sketch = (p) => {
     let cannonImg;
     let leanImg;
     let imgScale = 0.4;
+    let gameState = 'pregame';
+    let load = 0;
     p.preload = () => {
         shipImg = p.loadImage('assets/lean ship.png');
         cannonImg = p.loadImage('assets/lean cannon.png');
@@ -17,13 +19,14 @@ const sketch = (p) => {
     };
     let speed = 10;
     let res = 10;
-    let maxHeightMult = 0.8;
+    let maxHeightMult = 0.01;
     let minHeightMult = 0;
     let wheelRadius = 10;
     let wheelBase = 120;
     let xoff = 0;
     let angle = 0;
     let shot = false;
+    let X = -wheelBase * 4;
     class Lean {
         constructor(x, y, vx, vy, vangular, angle = 0) {
             this.x = x;
@@ -90,7 +93,7 @@ const sketch = (p) => {
         p.vertex(0, p.height);
         p.endShape();
         p.pop();
-        const x = p.width * 0.2 - wheelBase / 2;
+        const x = X;
         const y = getY(x / res) - wheelRadius;
         for (let i = 270; i > 90; i -= 0.1) {
             const x2 = x - wheelBase * p.cos(i);
@@ -121,8 +124,7 @@ const sketch = (p) => {
                 p.rotate(angle);
                 p.image(cannonImg, 55 * imgScale, 0, cannonImg.width * imgScale, cannonImg.height * imgScale);
                 p.pop();
-                p.fill('red');
-                if (p.mouseIsPressed && !shot) {
+                if (p.mouseIsPressed && !shot && gameState === 'play') {
                     leans.push(new Lean(x4 + 55 * imgScale * p.cos(angle) * 2, y4 + 55 * imgScale * p.sin(angle) * 2, 15 * p.cos(angle), 15 * p.sin(angle), -3 * p.cos(angle), angle));
                     shot = true;
                 }
@@ -132,6 +134,25 @@ const sketch = (p) => {
         xoff += speed / res;
         if (!p.mouseIsPressed) {
             shot = false;
+        }
+        if (gameState === 'pregame') {
+            p.textAlign(p.CENTER, p.CENTER);
+            p.textSize(50);
+            p.fill('purple');
+            p.text('LEAN PIRATES', p.width / 2, p.height / 2);
+            p.textSize(20);
+            p.text('click to start', p.width / 2, p.height / 2 + 50);
+            if (p.mouseIsPressed) {
+                gameState = 'loading';
+            }
+        }
+        if (gameState === 'loading') {
+            load += 1;
+            maxHeightMult = p.map(load, 0, 150, 0, 0.8);
+            X = p.map(load, 0, 150, -wheelBase * 2, p.width * 0.2 - wheelBase / 2);
+            if (load > 150) {
+                gameState = 'play';
+            }
         }
     };
 };
