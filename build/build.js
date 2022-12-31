@@ -1,0 +1,139 @@
+const sketch = (p) => {
+    let shipImg;
+    let cannonImg;
+    let leanImg;
+    let imgScale = 0.4;
+    p.preload = () => {
+        shipImg = p.loadImage('assets/lean ship.png');
+        cannonImg = p.loadImage('assets/lean cannon.png');
+        leanImg = p.loadImage('assets/LEAN.png');
+    };
+    p.setup = () => {
+        p.createCanvas(p.windowWidth, p.windowHeight);
+        p.frameRate(60);
+        p.angleMode(p.DEGREES);
+        p.imageMode(p.CENTER);
+        p.noiseDetail(3, 0.5);
+    };
+    let speed = 10;
+    let res = 10;
+    let maxHeightMult = 0.8;
+    let minHeightMult = 0;
+    let wheelRadius = 10;
+    let wheelBase = 120;
+    let xoff = 0;
+    let angle = 0;
+    let shot = false;
+    class Lean {
+        constructor(x, y, vx, vy, vangular, angle = 0) {
+            this.x = x;
+            this.y = y;
+            this.vel = {
+                x: vx,
+                y: vy,
+                angular: vangular,
+            };
+            this.angle = angle;
+        }
+        update() {
+            this.vel.y += Lean.gravity;
+            this.x += this.vel.x;
+            this.y += this.vel.y;
+            this.angle += this.vel.angular;
+            this.vel.x *= Lean.drag;
+            this.vel.y *= Lean.drag;
+            this.vel.angular *= Lean.angularDrag;
+            p.push();
+            p.translate(this.x, this.y);
+            p.rotate(this.angle);
+            p.image(leanImg, 0, 0, leanImg.width * Lean.imgScale, leanImg.height * Lean.imgScale);
+            p.pop();
+            if (this.x < -leanImg.width * Lean.imgScale * 2 ||
+                this.x > p.width + leanImg.width * Lean.imgScale ||
+                this.y > p.height) {
+                this.destroy();
+            }
+            if (this.y > getY(this.x / res)) {
+                this.destroy();
+            }
+        }
+        destroy() {
+            leans = leans.filter(l => l !== this);
+        }
+    }
+    Lean.drag = 0.995;
+    Lean.angularDrag = 0.999;
+    Lean.imgScale = 0.4;
+    Lean.gravity = 0.1;
+    let leans = [];
+    const getY = (x) => {
+        const n = (x + xoff) / 100;
+        let y = p.noise(n, n, xoff / 100);
+        const maxHeight = p.height * (1 - maxHeightMult);
+        const minHeight = p.height * (1 - minHeightMult);
+        y = p.map(y, 0, 1, minHeight, maxHeight);
+        return y;
+    };
+    p.draw = () => {
+        p.background('#87CEEB');
+        for (let i = 0; i < leans.length; i++) {
+            leans[i].update();
+        }
+        p.noStroke();
+        p.push();
+        p.beginShape();
+        for (let x = 0; x < p.width / res + 1; x++) {
+            p.vertex(x * res, getY(x));
+        }
+        p.fill('#7920F4');
+        p.vertex(p.width, p.height);
+        p.vertex(0, p.height);
+        p.endShape();
+        p.pop();
+        const x = p.width * 0.2 - wheelBase / 2;
+        const y = getY(x / res) - wheelRadius;
+        for (let i = 270; i > 90; i -= 0.1) {
+            const x2 = x - wheelBase * p.cos(i);
+            const y2 = y - wheelBase * p.sin(i);
+            if (y2 < getY(x2 / res) - wheelRadius) {
+                let result = true;
+                for (let j = 0; j < wheelBase; j += 1) {
+                    const x3 = x - j * p.cos(i);
+                    const y3 = y - j * p.sin(i);
+                    if (y3 > getY(x3 / res)) {
+                        result = false;
+                        break;
+                    }
+                }
+                if (!result) {
+                    continue;
+                }
+                const x4 = x - (wheelBase / 2) * p.cos(i);
+                const y4 = y - (wheelBase / 2) * p.sin(i);
+                p.push();
+                p.translate(x4, y4 - 100 * imgScale);
+                p.rotate(i + 180);
+                p.image(shipImg, 0, -shipImg.height * 0.08, shipImg.width * imgScale, shipImg.height * imgScale);
+                p.pop();
+                p.push();
+                p.translate(x4, y4 - 100 * imgScale);
+                angle = p.atan2(p.mouseY - y4, p.mouseX - x4);
+                p.rotate(angle);
+                p.image(cannonImg, 55 * imgScale, 0, cannonImg.width * imgScale, cannonImg.height * imgScale);
+                p.pop();
+                p.fill('red');
+                if (p.mouseIsPressed && !shot) {
+                    leans.push(new Lean(x4 + 55 * imgScale * p.cos(angle) * 2, y4 + 55 * imgScale * p.sin(angle) * 2, 15 * p.cos(angle), 15 * p.sin(angle), -3 * p.cos(angle), angle));
+                    shot = true;
+                }
+                break;
+            }
+        }
+        xoff += speed / res;
+        if (!p.mouseIsPressed) {
+            shot = false;
+        }
+    };
+};
+new p5(sketch);
+//# sourceMappingURL=build.js.map
